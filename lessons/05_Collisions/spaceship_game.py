@@ -26,20 +26,21 @@ class Settings:
         colors = {
             'white': (255, 255, 255),
             'black': (0, 0, 0),
-            'blue': (0, 0, 255)
+            'blue': (0, 0, 255),
+            'red': (255, 0, 0)
         }
 
         # FPS
         fps = 60
 
         # Player attributes
-        size = 25
+        size = 50
 
         speed = 5
 
         # Obstacle attributes
         obstacle_width= 20
-        obstacle_height = 40
+        obstacle_height = 20
         obstacle_speed = 5
         obstacle_x = 0
 
@@ -53,22 +54,33 @@ class Obstacle(pygame.sprite.Sprite):
     def __init__(self, settings):
         super().__init__()
         self.settings = settings
-        cactus_image = pygame.image.load(images_dir / "cactus_9.png").convert_alpha()
+        cactus_image = pygame.image.load(images_dir / "asteroid1.png").convert_alpha()
         self.image = pygame.transform.scale(cactus_image, (self.settings.obstacle_width, self.settings.obstacle_height))
+        self.original_image = pygame.transform.scale(cactus_image, (self.settings.obstacle_width, self.settings.obstacle_height))
         self.rect = self.image.get_rect()
         self.rect.x = Settings.width
         Settings.obstacle_x = Settings.width
-        self.rect.y = Settings.height - Settings.obstacle_height
+        self.rect.y = Settings.height - random.randint(40, 400)
         self.scored = False
         self.explosion = pygame.image.load(images_dir / "explosion1.gif")
         self.alive = True
         self.collided = False
+        self.angle = 0.0
+        self.x = self.rect.x
+        self.y = self.rect.y
 
     def update(self):
-        self.rect.x -= Settings.obstacle_speed
-        Settings.obstacle_x -= Settings.obstacle_speed
+        self.x = self.x + random.randint(-10, 5)
+        Settings.obstacle_x = Settings.obstacle_x +random.randint(-10, 5)
+        self.y = self.y + random.randint(-5, 5)
         # Remove the obstacle if it goes off screen
-        if self.rect.x < 0:
+        self.angle += 5
+        if self.angle >= 360:
+            self.angle = 0
+
+        self.image = pygame.transform.rotate(self.original_image, self.angle)
+        self.rect = self.original_image.get_rect(center = (self.x+10, self.y+10)) 
+        if self.x < 0:
             self.kill()
 
     def explode(self):
@@ -79,12 +91,10 @@ class Obstacle(pygame.sprite.Sprite):
         self.image = pygame.transform.scale(self.image, (Settings.obstacle_width, Settings.obstacle_height))
         self.rect = self.image.get_rect(center=self.rect.center)
 
-
-
 class Player(pygame.sprite.Sprite):
     def __init__(self, Settings):
         super().__init__()
-        dino_image = pygame.image.load(images_dir / "dino_0.png").convert_alpha()
+        dino_image = pygame.image.load(images_dir / "alien2.gif").convert_alpha()
         self.image = pygame.transform.scale(dino_image, (Settings.size, Settings.size))
         self.rect = self.image.get_rect()
         self.rect.x = 50
@@ -139,17 +149,40 @@ class Game_Over(pygame.sprite.Sprite):
 
 game_over_screen = Game_Over()
 game_over_group = pygame.sprite.Group(game_over_screen)
+class Laser(pygame.sprite.Sprite):
+    def __init__(self, x, y):
+        super().__init__()
+        self.laser_x = x
+        self.laser_y = y
+        self.width = 20
+        self.height = 10
+        self.speed = 10
+        self.color = Settings.colors['red']
+        self.rect = pygame.Rect(self.laser_x, self.laser_y, self.width, self.height)
 
-# Main game loop
-class Loop(Player, Obstacle):
-    def __init__(self, Player, Obstacle):
+    def update(self):
+        self.laser_x += self.speed
+        self.rect.x = self.laser_x
+        if self.laser_x > Settings.width:
+            self.kill()  # Remove from group when off screen
+
+    def draw(self, screen):
+        pygame.draw.rect(screen, self.color, self.rect)
+
+# Main game
+# loop
+class Loop():
+    def __init__(self):
         self.game_over = False
         self.high_score = 0
+        self.shooting = False
         self.game_loop(Settings)
-    def game_loop(self,Settings):
+        
+    def game_loop(self, Settings):
         clock = pygame.time.Clock()
         last_obstacle_time = pygame.time.get_ticks()
-
+        
+        self.lasers = pygame.sprite.Group()
         # Group for obstacles
         obstacles = pygame.sprite.Group()
 
@@ -161,9 +194,15 @@ class Loop(Player, Obstacle):
                     pygame.quit()
                     return
                 if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_SPACE and not player.is_jumping:
+                    if event.key == pygame.K_SPACE:
                         player.velocity = player.jump_strength
                         player.is_jumping = True
+                    if event.key == pygame.K_l:
+                        laser = Laser(player.rect.right, player.rect.y + Settings.size // 2)
+                        self.lasers.add(laser)
+                        self.shooting = True
+
+                        
 
 
             # Update player
@@ -175,14 +214,14 @@ class Loop(Player, Obstacle):
                 last_obstacle_time = pygame.time.get_ticks()
                 obstacle_count += add_obstacle(obstacles)
             obstacles.update()
-
+            self.lasers.update()
             # Check for collisions
             
             for obstacle in obstacles:
                 if not obstacle.scored and not obstacle.collided and obstacle.rect.right < player.rect.left:
                     Settings.score += 1
                     obstacle.scored = True
-
+                   
 
             
             collider = pygame.sprite.spritecollide(player, obstacles, dokill=False)
@@ -193,12 +232,21 @@ class Loop(Player, Obstacle):
                     self.game_over = True
                     if Settings.score > self.high_score:
                         self.high_score = Settings.score
-
+            laser_collider = pygame.sprite.groupcollide(obstacles, self.lasers, dokilla=True, dokillb=True)
+            for obstacle in laser_collider:
+                if laser_collider:
+                    Settings.score = Settings.score + 1
+                    
+                    
             # Draw everything
             Settings.screen.fill(Settings.colors['white'])
             player_group.draw(Settings.screen)
             obstacles.draw(Settings.screen)
             pygame.draw.rect(Settings.screen, Settings.colors['blue'], (0, 300, 1000, 500))
+            
+            for laser in self.lasers:
+                pygame.draw.rect(Settings.screen, Settings.colors['red'], (laser.laser_x, laser.laser_y, 20, 10))
+
 
             # Display obstacle count
             obstacle_text = Settings.font.render(f"Obstacles: {obstacle_count}", True, Settings.colors['black'])
@@ -243,4 +291,4 @@ class Loop(Player, Obstacle):
 
             
         # Game over screen
-game_loop = Loop(Player, Obstacle)
+game_loop = Loop()

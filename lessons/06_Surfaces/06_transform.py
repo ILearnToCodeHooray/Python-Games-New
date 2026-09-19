@@ -29,7 +29,7 @@ pygame.display.set_caption("")
 filename = images / 'spritesheet.png'  # Replace with your actual file path
 cellsize = (16, 16)  # Replace with the size of your sprites
 ss = SpriteSheet(filename, cellsize)
-
+ 
 # Get a bunch of images from the sprite sheet
 log = ss.compose_horiz([24, 25, 26])
 alig = ss.compose_horiz([32, 33, 15])
@@ -39,7 +39,6 @@ fly = ss.image_at(57)
 
 
 screen.blit(alig, grid[14])
-
 # Scale in X and Y, bigger or smaller. 
 alig3x = pygame.transform.scale(alig, (alig.get_width() * 3, alig.get_height() * 3))
 screen.blit(alig3x, grid[15])

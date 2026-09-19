@@ -26,17 +26,15 @@ class GameSettings:
     screen_height: int = 500
     player_size: int = 10
     player_x: int = 100 # Initial x position of the player
-   
-    jump_velocity: int = 200
+    gravity: float = 0.3 # acelleration, the change in velocity per frame
+    jump_velocity: int = 15
     white: tuple = (255, 255, 255)
     black: tuple = (0, 0, 0)
-
-    gravity: float = 60.0 # acceleration, the change in velocity per frame
-    d_t: float = 1.0/30
-    m: float = 2.0 # mass of the player, used to calculate acceleration
+    tick_rate: int = 30 # Frames per second
 
 # Initialize game settings
 settings = GameSettings()
+
 
 
 # Initialize screen
@@ -47,6 +45,7 @@ player = pygame.Rect(settings.player_x,
                      settings.screen_height - settings.player_size, 
                      settings.player_size, settings.player_size)
 
+player_y_velocity = 0
 is_jumping = False
 
 # Main game loop
@@ -59,25 +58,21 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
-
+    keys = pygame.key.get_pressed()
     # Continuously jump. If the player is not jumping, initialize a new jump
-    if is_jumping is False:
+    if keys[pygame.K_SPACE] and player.bottom >= settings.screen_height:
         # Jumping means that the player is going up. The top of the 
         # screen is y=0, and the bottom is y=SCREEN_HEIGHT. So, to go up,
         # we need to have a negative y velocity
-        d_v_y = -settings.jump_velocity
+        player_y_velocity = -settings.jump_velocity
         is_jumping = True
 
-    # acelleration in sht y direction
-    a_y = settings.gravity
-
-    # Change in the velocity due to accelleration
-    d_v_y += a_y * settings.d_t
-
-    # Change in the position due to the velocity
-    d_y = d_v_y * settings.d_t
-
-    player.y += d_y
+    # Update player position. Gravity is always pulling the player down,
+    # which is the positive y direction, so we add GRAVITY to the y velocity
+    # to make the player go up more slowly. Eventually, the player will have
+    # a positive y velocity, and gravity will pull the player down.
+    player_y_velocity += settings.gravity
+    player.y += player_y_velocity
 
     # If the player hits the ground, stop the player from falling.
     # The player's position is measured from the top left corner, so the
@@ -87,7 +82,7 @@ while running:
     # and stop the player from falling
     if player.bottom >= settings.screen_height:
         player.bottom = settings.screen_height 
-        d_v_y = 0
+        player_y_velocity = 0
         is_jumping = False
 
     # Draw everything
@@ -95,6 +90,6 @@ while running:
     pygame.draw.rect(screen, settings.black, player)
 
     pygame.display.flip()
-    clock.tick( int(1/settings.d_t))
+    clock.tick(settings.tick_rate)
 
 pygame.quit()

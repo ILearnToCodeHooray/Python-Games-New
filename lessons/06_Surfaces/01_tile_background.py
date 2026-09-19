@@ -1,55 +1,86 @@
-"""
-Example of loading a background image that is not as wide as the screen, and
-tiling it to fill the screen.
-
-"""
 import pygame
 
-# Initialize Pygame
 pygame.init()
 
-from pathlib import Path
-assets = Path(__file__).parent / 'images'
+# ------------------------
+# Setup
+# ------------------------
+SCREEN_W, SCREEN_H = 600, 600
+screen = pygame.display.set_mode((SCREEN_W, SCREEN_H))
+pygame.display.set_caption("Scrolling Background - Class Version")
 
-# Set up display
-screen_width = 600
-screen_height = 600
-screen = pygame.display.set_mode((screen_width, screen_height))
-pygame.display.set_caption('Tiled Background')
+# ------------------------
+# Background class
+# ------------------------
+class Background(pygame.sprite.Sprite):
+    def __init__(self, colors, tile_width=100, scroll_speed=120):
+        super().__init__()
+        self.tile_width = tile_width
+        self.scroll_speed = scroll_speed  # pixels per second
+        self.image = self.make_repeating_pattern(colors)
+        self.rect = self.image.get_rect(topleft=(0, 0))  # where pattern starts
+        self.pattern_width = self.image.get_width()
 
-def make_tiled_bg(screen, bg_file):
-    # Scale background to match the screen height
-    
-    bg_tile = pygame.image.load(bg_file).convert()
-    
-    background_height = screen.get_height()
-    bg_tile = pygame.transform.scale(bg_tile, (bg_tile.get_width(), screen.get_height()))
+    def make_color_tile(self, color):
+        """Return a 100px-wide Surface as tall as the screen, filled with color."""
+        surf = pygame.Surface((self.tile_width, SCREEN_H))
+        surf.fill(color)
+        return surf
 
-    # Get the dimensions of the background after scaling
-    background_width = bg_tile.get_width()
+    def make_repeating_pattern(self, colors):
+        """Create one long repeating strip of colored tiles."""
+        pattern_w = self.tile_width * len(colors)
+        pattern = pygame.Surface((pattern_w, SCREEN_H)).convert()
+        x = 0
+        for color in colors:
+            pattern.blit(self.make_color_tile(color), (x, 0))
+            x += self.tile_width
+        return pattern
 
-    # Make an image the is the same size as the screen
-    image = pygame.Surface((screen.get_width(), screen.get_height()))
+    def update(self, dt):
+        """Move the background leftward by scroll_speed * dt."""
+        self.rect.x -= self.scroll_speed * dt
 
-    # Tile the background image in the x-direction
-    for x in range(0, screen.get_width(), background_width):
-        image.blit(bg_tile, (x, 0))
-        
-    return image
+        # Once it has fully scrolled left past one pattern width, reset it.
+        if self.rect.x <= -self.pattern_width:
+            self.rect.x = 0
 
-background = make_tiled_bg(screen, assets/'background_tile.gif')
+    def draw(self, surface):
+        """Draw the pattern twice to fill the whole screen."""
+        surface.blit(self.image, (self.rect.x, 0))
+        surface.blit(self.image, (self.rect.x + self.pattern_width, 0))
 
+# ------------------------
+# Create background object
+# ------------------------
+stripe_colors = [
+    (231, 76, 60),   # red
+    (46, 204, 113),  # green
+    (52, 152, 219),  # blue
+    (241, 196, 15),  # yellow
+    (155, 89, 182),  # purple
+    (26, 188, 156),  # teal
+]
+
+background = Background(stripe_colors, tile_width=100, scroll_speed=120)
+
+# ------------------------
 # Main loop
+# ------------------------
+clock = pygame.time.Clock()
 running = True
+
 while running:
+    dt = clock.tick(60) / 1000.0  # seconds since last frame
+
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
 
-    screen.blit(background,(0,0))
+    # Update and draw
+    background.update(dt)
+    background.draw(screen)
 
-    # Update the display
     pygame.display.flip()
 
-# Quit Pygame
 pygame.quit()

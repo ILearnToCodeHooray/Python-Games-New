@@ -13,7 +13,7 @@ d = Path(__file__).parent # The directory that holds the script
 
 # Initialize Pygame
 pygame.init()
-
+ 
 class Settings:
     """A class to store all settings for the game."""
     SCREEN_WIDTH = 800

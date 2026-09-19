@@ -102,7 +102,7 @@ def main():
     pygame.key.set_repeat(50, 50)
     
     key_limit = 0
-    while running:
+    while running: 
         key_limit += 1
         
         screen.fill(Settings.BACKGROUND_COLOR)
