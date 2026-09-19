@@ -21,6 +21,7 @@ class Settings:
     lives = 3
     tank1health = 100
     tank2health = 100
+    lines = []
 
 class Tank(pygame.sprite.Sprite):
     """Class representing the spaceship."""
@@ -204,6 +205,14 @@ class Game:
 
         self.clock = pygame.time.Clock()
         self.running = True
+        
+        settings.lines = [
+            (0,0),
+            (100,100),
+            (500, 100),
+            (500,500)
+        ]
+
 
     def add(self, sprite):
         """Adds a sprite to the game. Really important! This group is used to
@@ -246,6 +255,9 @@ class Game:
         self.screen.blit(tank2health_text, (350, 10))
         # The sprite group has a draw method that will draw all of the sprites in
         # the group.
+        for i, line in enumerate(Settings.lines[0:-1]):
+            print("something")
+            pygame.draw.line(self.screen, (255, 255, 255), line, Settings.lines[i+1], 2)
         all_sprites.draw(self.screen)
         pygame.display.flip()
 
@@ -277,6 +289,7 @@ if __name__ == "__main__":
     tank_2 = Tank(
         settings, position=(100, settings.height // 2), team=2
     )
+
     game.add(tank_1)
     game.add(tank_2)
 
