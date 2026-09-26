@@ -21,7 +21,13 @@ class Settings:
     lives = 3
     tank1health = 100
     tank2health = 100
-    lines = []
+    lines = [
+        (400,200),
+        (200,200),
+        (200,400),
+        (400,400),
+        (400,200)
+    ]
 
 class Tank(pygame.sprite.Sprite):
     """Class representing the spaceship."""
@@ -33,9 +39,9 @@ class Tank(pygame.sprite.Sprite):
         self.settings = settings
 
         if team == 1:
-            self.angle = -90
-        else:
             self.angle = 90
+        else:
+            self.angle = -90
         self.original_image = self.create_spaceship_image()
 
         self.move = pygame.Vector2(0, -10)
@@ -46,11 +52,15 @@ class Tank(pygame.sprite.Sprite):
         # For Sprites, the image and rect attributes are part of the Sprite class
         # and are important. The image is the surface that will be drawn on the screen
         spaceship_position = position
+        front_rect_pos = spaceship_position + pygame.Vector2(10, 0)
+        print(front_rect_pos)
         self.image = self.original_image.copy() 
-        self.rect = self.image.get_rect(center=position)
+        self.rect = self.image.get_rect(center=spaceship_position)
+        #self.front_rect = self.image.get_rect(center=front_rect_pos)
         # These values help us limit the rate of fire
         self.last_shot = pygame.time.get_ticks()
-        self.shoot_delay = self.settings.shoot_delay  
+        self.shoot_delay = self.settings.shoot_delay
+        self.clipped_line = False
 
     def create_spaceship_image(self):
         """Creates the spaceship shape as a surface."""
@@ -85,7 +95,13 @@ class Tank(pygame.sprite.Sprite):
 
     def update(self):
         keys = pygame.key.get_pressed()
-        if self.team == 1:
+        for i in range(len(Settings.lines) - 1):
+            if self.rect.clipline(Settings.lines[i], Settings.lines[i+1]):
+                self.clipped_line = True
+            else:
+                self.clipped_line = False
+
+        if self.team == 2:
             if keys[pygame.K_UP]:
                 self.velocity = (pygame.Vector2(0, -5).rotate(self.angle))
             elif not keys[pygame.K_DOWN]:
@@ -105,7 +121,7 @@ class Tank(pygame.sprite.Sprite):
                 self.velocity = (pygame.Vector2(0, 0).rotate(self.angle))
 
             if keys[pygame.K_RETURN] and self.ready_to_shoot():
-                self.fire_projectile(1)
+                self.fire_projectile(2)
         else:
             if keys[pygame.K_w]:
                 self.velocity = (pygame.Vector2(0, -5).rotate(self.angle))
@@ -126,7 +142,7 @@ class Tank(pygame.sprite.Sprite):
                 self.velocity = (pygame.Vector2(0, 0).rotate(self.angle))
 
             if keys[pygame.K_SPACE] and self.ready_to_shoot():
-                self.fire_projectile(2)
+                self.fire_projectile(1)
         # Reassigning the rect because the image has changed.
         self.rect = self.image.get_rect(center=self.rect.center)
 
@@ -206,12 +222,6 @@ class Game:
         self.clock = pygame.time.Clock()
         self.running = True
         
-        settings.lines = [
-            (0,0),
-            (100,100),
-            (500, 100),
-            (500,500)
-        ]
 
 
     def add(self, sprite):
@@ -255,27 +265,26 @@ class Game:
         self.screen.blit(tank2health_text, (350, 10))
         # The sprite group has a draw method that will draw all of the sprites in
         # the group.
+
         for i, line in enumerate(Settings.lines[0:-1]):
-            print("something")
+
             pygame.draw.line(self.screen, (255, 255, 255), line, Settings.lines[i+1], 2)
         all_sprites.draw(self.screen)
         pygame.display.flip()
 
-
     def run(self):
         """Main Loop for the game."""
-       
-        while True:
-            while self.running:
-                for event in pygame.event.get():
-                    if event.type == pygame.QUIT:
-                        self.running = False
-                self.clock.tick(self.settings.fps)
-                tanks.update()
-                self.update()
-                self.draw()
-                self.clock.tick(1500)
-            pygame.quit()
+
+        while self.running:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    self.running = False
+            self.clock.tick(self.settings.fps)
+            tanks.update()
+            self.update()
+            self.draw()
+            self.clock.tick(1500)
+        pygame.quit()
 
 if __name__ == "__main__":
 
@@ -284,10 +293,11 @@ if __name__ == "__main__":
     game = Game(settings)
 
     tank_1 = Tank(
-        settings, position=(500, settings.height // 2), team=1
+        settings, position=(100, settings.height // 2), team=1
     )
+
     tank_2 = Tank(
-        settings, position=(100, settings.height // 2), team=2
+        settings, position=(500, settings.height // 2), team=2
     )
 
     game.add(tank_1)
