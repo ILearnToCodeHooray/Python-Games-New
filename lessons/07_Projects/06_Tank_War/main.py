@@ -50,7 +50,7 @@ class Tank(pygame.sprite.Sprite):
         self.team = team
         self.acceleration = 1
         # For Sprites, the image and rect attributes are part of the Sprite class
-        # and are important. The image is the surface that will be drawn on the screen
+        # and are importanta. The image is the surface that will be drawn on the screen
         spaceship_position = position
         front_rect_pos = spaceship_position + pygame.Vector2(-10, 0)
         back_rect_pos = spaceship_position - pygame.Vector2(-10, 0)
@@ -149,10 +149,12 @@ class Tank(pygame.sprite.Sprite):
 
             if keys[pygame.K_SPACE] and self.ready_to_shoot():
                 self.fire_projectile(1)
+        offset = pygame.Vector2(-100,0).rotate(self.angle)
         # Reassigning the rect because the image has changed.
         self.rect = self.image.get_rect(center=self.rect.center)
-        self.front_rect = self.image.get_rect(center=self.rect.center+pygame.Vector2(-10,0))
-        self.back_rect = self.image.get_rect(center=self.rect.center-pygame.Vector2(-10,0))
+        self.front_rect = self.image.get_rect(center=self.rect.center+offset)
+        self.back_rect = self.image.get_rect(center=self.rect.center+pygame.Vector2(10,0))
+
         screen_width = self.settings.width
         screen_height = self.settings.height
 
@@ -277,7 +279,7 @@ class Game:
 
             pygame.draw.line(self.screen, (255, 255, 255), line, Settings.lines[i+1], 2)
         all_sprites.draw(self.screen)
-        pygame.draw.rect(self.screen, self.settings.colors["red"], tank_1.back_rect)
+        pygame.draw.rect(self.screen, self.settings.colors["red"], tank_1.front_rect)
         pygame.display.flip()
 
     def run(self):
