@@ -52,13 +52,9 @@ class Tank(pygame.sprite.Sprite):
         # For Sprites, the image and rect attributes are part of the Sprite class
         # and are importanta. The image is the surface that will be drawn on the screen
         spaceship_position = position
-        front_rect_pos = spaceship_position + pygame.Vector2(-10, 0)
-        back_rect_pos = spaceship_position - pygame.Vector2(-10, 0)
         #print(front_rect_pos)
         self.image = self.original_image.copy() 
         self.rect = self.image.get_rect(center=spaceship_position)
-        self.front_rect = self.image.get_rect(center=front_rect_pos)
-        self.back_rect = self.image.get_rect(center=back_rect_pos)
         # These values help us limit the rate of fire
         self.last_shot = pygame.time.get_ticks()
         self.shoot_delay = self.settings.shoot_delay
@@ -97,21 +93,13 @@ class Tank(pygame.sprite.Sprite):
         self.game.add(new_projectile)
 
     def update(self):
+        '''make predicted rect move first
+        check for collision
+        only move if no collision'''
         keys = pygame.key.get_pressed()
-        for i in range(len(self.settings.lines) - 1):
-            if self.front_rect.clipline(self.settings.lines[i], self.settings.lines[i+1]):
-                self.front_clipped_line = True
-                break
-
-            else:
-                self.front_clipped_line = False
-            if self.back_rect.clipline(self.settings.lines[i], self.settings.lines[i+1]):
-                self.back_clipped_line = True
-            else:
-                self.back_clipped_line = False
         if self.team == 2:
-            if keys[pygame.K_UP] and self.front_clipped_line == False:
-                self.velocity = (pygame.Vector2(0, -5).rotate(self.angle))w
+            if keys[pygame.K_UP]:
+                self.velocity = (pygame.Vector2(0, -5).rotate(self.angle))
             elif not keys[pygame.K_DOWN]:
                 self.velocity = (pygame.Vector2(0, 0).rotate(self.angle))
 
@@ -123,7 +111,7 @@ class Tank(pygame.sprite.Sprite):
                 self.angle += 5
                 self.move.rotate_ip(self.angle)
 
-            if keys[pygame.K_DOWN] and self.back_clipped_line == False:
+            if keys[pygame.K_DOWN]:
                 self.velocity = (pygame.Vector2(0, 2.5).rotate(self.angle))
             elif not keys[pygame.K_UP]:
                 self.velocity = (pygame.Vector2(0, 0).rotate(self.angle))
@@ -131,17 +119,6 @@ class Tank(pygame.sprite.Sprite):
             if keys[pygame.K_RETURN] and self.ready_to_shoot():
                 self.fire_projectile(2)
         else:
-            for i in range(len(self.settings.lines) - 1):
-                if self.front_rect.clipline(self.settings.lines[i], self.settings.lines[i+1]):
-                    self.front_clipped_line = True
-                    break
-
-                else:
-                    self.front_clipped_line = False
-                if self.back_rect.clipline(self.settings.lines[i], self.settings.lines[i+1]):
-                    self.back_clipped_line = True
-                else:
-                    self.back_clipped_line = False
             if keys[pygame.K_w]:
                 self.velocity = (pygame.Vector2(0, -5).rotate(self.angle))
             elif not keys[pygame.K_DOWN]:
@@ -165,8 +142,6 @@ class Tank(pygame.sprite.Sprite):
         offset = pygame.Vector2(0,-25).rotate(self.angle)
         # Reassigning the rect because the image has changed.
         self.rect = self.image.get_rect(center=self.rect.center)
-        self.front_rect = self.image.get_rect(center=self.rect.center+offset)
-        self.back_rect = self.image.get_rect(center=self.rect.center+pygame.Vector2(10,0))
 
         screen_width = self.settings.width
         screen_height = self.settings.height
@@ -184,6 +159,8 @@ class Tank(pygame.sprite.Sprite):
             self.rect.y = screen_height
         # Dont forget this part! If you don't call the Sprite update method, the
         # sprite will not be drawn
+        self.predicted_rect.center += self.velocity
+
         self.rect.center += self.velocity
         self.image = pygame.transform.rotate(self.original_image, -self.angle)
         super().update()
@@ -285,6 +262,7 @@ class Game:
         self.screen.blit(tank1health_text, (10, 10))
         tank2health_text = self.settings.font.render(f"Tank 2 Health: {self.settings.tank2health}", True, self.settings.colors["white"])
         self.screen.blit(tank2health_text, (350, 10))
+        pygame.draw.rect(self.screen, self.settings.colors["blue"], tank_1.predicted_rect)
         # The sprite group has a draw method that will draw all of the sprites in
         # the group.
 
@@ -292,8 +270,6 @@ class Game:
 
             pygame.draw.line(self.screen, (255, 255, 255), line, Settings.lines[i+1], 2)
         all_sprites.draw(self.screen)
-        pygame.draw.rect(self.screen, self.settings.colors["red"], tank_1.front_rect)
-        pygame.draw.rect(self.screen, self.settings.colors["blue"], tank_2.front_rect)
         pygame.display.flip()
 
     def run(self):
