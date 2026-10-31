@@ -22,11 +22,20 @@ class Settings:
     tank1health = 100
     tank2health = 100
     lines = [
+        [
         (400,200),
         (200,200),
         (200,400),
         (400,400),
         (400,200)
+    ],[
+        (0, 0),
+        (595, 0),
+        (595, 545),
+        (0, 545),
+        (0, 0)
+
+    ]
     ]
 
 class Tank(pygame.sprite.Sprite):
@@ -60,6 +69,9 @@ class Tank(pygame.sprite.Sprite):
         self.shoot_delay = self.settings.shoot_delay
         self.clipped_line = False
         self.predicted_rect = self.image.get_rect(center=spaceship_position)
+        #print(self.predicted_rect.width)
+        self.predicted_rect.width = 60
+        self.predicted_rect.height = 60
 
     def create_spaceship_image(self):
         """Creates the spaceship shape as a surface."""
@@ -157,11 +169,35 @@ class Tank(pygame.sprite.Sprite):
 
         if self.rect.bottom < 0:
             self.rect.y = screen_height
+
+        if self.predicted_rect.right < 0:
+            self.predicted_rect.x = screen_width
+            
+        if self.predicted_rect.left > screen_width:
+            self.predicted_rect.x = 0
+
+        if self.predicted_rect.top > screen_height:
+            self.predicted_rect.y = 0
+
+        if self.predicted_rect.bottom < 0:
+            self.predicted_rect.y = screen_height
         # Dont forget this part! If you don't call the Sprite update method, the
         # sprite will not be drawn
+        self.predicted_rect.center = self.rect.center
         self.predicted_rect.center += self.velocity
+        for k in range(2):
+            for i in range(len(self.settings.lines[k]) - 1):
+                if self.predicted_rect.clipline(self.settings.lines[k][i], self.settings.lines[k][i+1]):
+                    self.predicted_rect.center = self.rect.center
+                    self.clipped_line = True
+                    break
+                else:
+                    self.clipped_line = False
+            if self.clipped_line == True:
+                break
+        if self.clipped_line == False:
+            self.rect.center += self.velocity
 
-        self.rect.center += self.velocity
         self.image = pygame.transform.rotate(self.original_image, -self.angle)
         super().update()
 
@@ -200,6 +236,15 @@ class Projectile(pygame.sprite.Sprite):
         self.rect = self.image.get_rect(center=position)
 
     def update(self):
+        for k in range(2):
+            for i in range(len(self.settings.lines[k]) - 1):
+                if self.rect.clipline(self.settings.lines[k][i], self.settings.lines[k][i+1]):
+                    self.clipped_line = True
+                    self.kill()
+                    break
+                else:
+                    self.clipped_line = False
+
         self.rect.center += self.velocity
 
 
@@ -247,11 +292,13 @@ class Game:
                 if not tank.team == projectile.team:
                     if tank.team == 1:
                         Settings.tank1health -= 10
-
                         projectile.kill()
+                        if Settings.tank1health == 0:
+                            tank.kill()
                     elif tank.team == 2:
                         Settings.tank2health -= 10
-
+                        if Settings.tankhealth == 0:
+                            tank.kill()
                         projectile.kill()
 
         projectiles.update()
@@ -262,13 +309,13 @@ class Game:
         self.screen.blit(tank1health_text, (10, 10))
         tank2health_text = self.settings.font.render(f"Tank 2 Health: {self.settings.tank2health}", True, self.settings.colors["white"])
         self.screen.blit(tank2health_text, (350, 10))
-        pygame.draw.rect(self.screen, self.settings.colors["blue"], tank_1.predicted_rect)
+        # pygame.draw.rect(self.screen, self.settings.colors["blue"], tank_2.predicted_rect)
         # The sprite group has a draw method that will draw all of the sprites in
         # the group.
+        for k in range(2):
+            for i, line in enumerate(Settings.lines[k][0:-1]):
 
-        for i, line in enumerate(Settings.lines[0:-1]):
-
-            pygame.draw.line(self.screen, (255, 255, 255), line, Settings.lines[i+1], 2)
+                pygame.draw.line(self.screen, (255, 255, 255), line, Settings.lines[k][i+1], 2)
         all_sprites.draw(self.screen)
         pygame.display.flip()
 
