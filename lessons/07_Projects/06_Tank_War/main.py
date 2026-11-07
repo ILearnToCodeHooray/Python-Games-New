@@ -9,18 +9,18 @@ assets = Path(__file__).parent / "images"
 class Settings:
     """Class to store game configuration.""" 
     font = pygame.font.SysFont(None, 36)
-    width = 600
-    height = 600
+    width = 1000
+    height = 1000
     fps = 60
     triangle_size = 20
     projectile_speed = 5 
     projectile_size = 11
-    shoot_delay = 250  # 250 milliseconds between shots, or 4 shots per second
+    shoot_delay = 0  # 250 milliseconds between shots, or 4 shots per second
     colors = {"white": (255, 255, 255), "black": (0, 0, 0), "red": (255, 0, 0), "blue": (0, 0, 255)}
     score = 0
     lives = 3
-    tank1health = 100
-    tank2health = 100
+    tank1health = 1000
+    tank2health = 1000
     lines = [
         [
         (400,200),
@@ -35,7 +35,19 @@ class Settings:
         (0, 545),
         (0, 0)
 
-    ]
+    ],[
+        (130,130),
+        (30,130),
+        (30,30),
+        (130,30),
+        (130,130)
+    ],[
+        (570,130),
+        (540,130),
+        (540,30),
+        (1320,30),
+        (130,130)
+    ],
     ]
 
 class Tank(pygame.sprite.Sprite):
@@ -151,7 +163,6 @@ class Tank(pygame.sprite.Sprite):
 
             if keys[pygame.K_SPACE] and self.ready_to_shoot():
                 self.fire_projectile(1)
-        offset = pygame.Vector2(0,-25).rotate(self.angle)
         # Reassigning the rect because the image has changed.
         self.rect = self.image.get_rect(center=self.rect.center)
 
@@ -185,7 +196,7 @@ class Tank(pygame.sprite.Sprite):
         # sprite will not be drawn
         self.predicted_rect.center = self.rect.center
         self.predicted_rect.center += self.velocity
-        for k in range(2):
+        for k in range(3):
             for i in range(len(self.settings.lines[k]) - 1):
                 if self.predicted_rect.clipline(self.settings.lines[k][i], self.settings.lines[k][i+1]):
                     self.predicted_rect.center = self.rect.center
@@ -236,7 +247,7 @@ class Projectile(pygame.sprite.Sprite):
         self.rect = self.image.get_rect(center=position)
 
     def update(self):
-        for k in range(2):
+        for k in range(3):
             for i in range(len(self.settings.lines[k]) - 1):
                 if self.rect.clipline(self.settings.lines[k][i], self.settings.lines[k][i+1]):
                     self.clipped_line = True
@@ -297,7 +308,7 @@ class Game:
                             tank.kill()
                     elif tank.team == 2:
                         Settings.tank2health -= 10
-                        if Settings.tankhealth == 0:
+                        if Settings.tank2health == 0:
                             tank.kill()
                         projectile.kill()
 
@@ -312,7 +323,7 @@ class Game:
         # pygame.draw.rect(self.screen, self.settings.colors["blue"], tank_2.predicted_rect)
         # The sprite group has a draw method that will draw all of the sprites in
         # the group.
-        for k in range(2):
+        for k in range(3):
             for i, line in enumerate(Settings.lines[k][0:-1]):
 
                 pygame.draw.line(self.screen, (255, 255, 255), line, Settings.lines[k][i+1], 2)
