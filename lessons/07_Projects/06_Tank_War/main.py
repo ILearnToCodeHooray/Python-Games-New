@@ -9,18 +9,18 @@ assets = Path(__file__).parent / "images"
 class Settings:
     """Class to store game configuration.""" 
     font = pygame.font.SysFont(None, 36)
-    width = 1000
-    height = 1000
+    width = 600
+    height = 600
     fps = 60
     triangle_size = 20
     projectile_speed = 5 
     projectile_size = 11
-    shoot_delay = 0  # 250 milliseconds between shots, or 4 shots per second
+    shoot_delay = 250  # 250 milliseconds between shots, or 4 shots per second
     colors = {"white": (255, 255, 255), "black": (0, 0, 0), "red": (255, 0, 0), "blue": (0, 0, 255)}
     score = 0
     lives = 3
-    tank1health = 1000
-    tank2health = 1000
+    tank1health = 100
+    tank2health = 100
     lines = [
         [
         (400,200),
